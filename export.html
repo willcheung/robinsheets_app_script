@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  </head>
+  <body>
+  
+  <script>
+  function exportOptionOrders() {
+    document.getElementById('error').style.display = "none";
+    document.getElementById('loading').style.display = "block";
+    document.getElementById('options-button').disabled = true;
+    document.getElementById('stocks-button').disabled = true;
+    
+    var data = {
+      'username': document.forms["robinhood-login"]["username"].value,
+      'password': document.forms["robinhood-login"]["password"].value,
+      'operation': 'export_options_orders'
+    };
+
+    google.script.run.withSuccessHandler(closeDialog).withFailureHandler(printError).robinhood_get_options_orders(data);
+  };
+  
+  function exportStockOrders() {
+    document.getElementById('error').style.display = "none";
+    document.getElementById('loading').style.display = "block";
+    document.getElementById('options-button').disabled = true;
+    document.getElementById('stocks-button').disabled = true;
+    
+    var data = {
+      'username': document.forms["robinhood-login"]["username"].value,
+      'password': document.forms["robinhood-login"]["password"].value,
+      'operation': 'export_stocks_orders'
+    };
+    
+    google.script.run.withSuccessHandler(closeDialog).withFailureHandler(printError).robinhood_get_stocks_orders(data);
+  };
+  
+  function respondToChallenge() {
+    var data = {
+      'username': document.forms["robinhood-login"]["username"].value,
+      'password': document.forms["robinhood-login"]["password"].value,
+      'challenge_id': document.forms["robinhood-login"]["challenge-id"].value,
+      'sms_code': document.forms["robinhood-login"]["challenge-code"].value,
+      'operation': 'respond_to_challenge'
+    };
+    
+    document.getElementById('challenge-button').disabled = true;
+    google.script.run.withSuccessHandler(confirmedIdentity).withFailureHandler(printError).robinhood_respond_to_challenge(data);
+    
+  };
+  
+  window.closeDialog = function() {
+    google.script.host.close();
+  };
+  
+  function confirmedIdentity(response) {
+    document.getElementById('challenge-block').style.display = "none";
+    document.getElementById('error').style.display = "none";
+    
+    document.getElementById('options-button').disabled = false;
+    document.getElementById('stocks-button').disabled = false;
+    
+    document.getElementById('success').style.display = "block";
+    document.getElementById('success').innerHTML = JSON.parse(response).message;
+  }
+  
+  function printError(error) {
+    err_json = JSON.parse(error.message)
+    
+    if (err_json.hasOwnProperty('challengeId')) {
+      document.getElementById('challenge-block').style.display = "block";
+      document.getElementById("challenge-id").value = err_json.challengeId;
+    }
+    
+    document.getElementById('challenge-button').disabled = false;
+    document.getElementById('loading').style.display = "none";
+    document.getElementById('error').style.display = "block";
+    document.getElementById('error').innerHTML = err_json.message;
+  };
+  
+  function checkform() {
+    if (document.forms["robinhood-login"]["username"].value.length == 0 || document.forms["robinhood-login"]["password"].value.length == 0) {
+        document.getElementById('options-button').disabled = true;
+        document.getElementById('stocks-button').disabled = true;
+    } else {
+        document.getElementById('options-button').disabled = false;
+        document.getElementById('stocks-button').disabled = false;
+    }
+  };
+  
+  </script>
+  
+  <form name="robinhood-login">
+    <div class="input-group mb-3">
+      <input id="username" type="username" name="username" class="form-control" placeholder="Username" aria-label="Username" onkeyup="checkform()">
+    </div>
+    <div class="input-group mb-3">
+      <input id="password" type="password" name="password" class="form-control" placeholder="Password" aria-label="Password" onkeyup="checkform()">
+    </div>
+  
+    <div class="mb-3">
+      Export:
+      <button id="options-button" type="button" class="btn btn-primary" onclick="exportOptionOrders()" disabled="disabled">Option Orders</button>
+      <button id="stocks-button" type="button" class="btn btn-primary" onclick="exportStockOrders()" disabled="disabled">Stock Orders</button>
+    </div>
+    
+    <p id="error" class="mt-5 font-weight-light text-danger" style="display:none"></p>
+    <div id="challenge-block" class="container" style="display:none">
+      <div class="row">
+        <input name="challenge-id" class="form-control mb-2 mr-2 col-9" id="challenge-id" style="display:none" type="text" value="challenge">
+        <input name="challeng-code" class="form-control mb-2 mr-2 col-9" id="challenge-code" placeholder="Robinhood code" type="text">
+        <button id="challenge-button" type="button" class="btn btn-primary mb-2 col-2" onclick="respondToChallenge()">Submit</button>
+    </div></div>
+  </form>
+  
+  <p id="success" class="mt-5 font-weight-light text-success" style="display:none"></p>
+  <p id="loading" class="mt-5 font-italic font-weight-light" style="display:none">Exporting data... This may take a minute.</p>
+</body>
+</html>
+
+
